@@ -1,0 +1,353 @@
+body {
+    width: 400px;
+    min-height: 300px;
+    margin: 0;
+    padding: 15px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.collection-form {
+    position: sticky;
+    top: 0;
+    background: white;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    z-index: 100;
+}
+
+#collectionName {
+    width: 70%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: #2196F3;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #1976D2;
+}
+
+.delete-collection-btn, .delete-tab-btn, .delete-selected-btn {
+    background-color: #dc3545;
+}
+
+.delete-collection-btn:hover, .delete-tab-btn:hover, .delete-selected-btn:hover {
+    background-color: #c82333;
+}
+
+.collections-counter {
+    font-size: 1.1em;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 10px;
+    padding: 5px 0;
+    border-bottom: 2px solid #eee;
+}
+
+.collection-item {
+    border: 1px solid #eee;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.collection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+.collection-header:hover {
+    background-color: #e9ecef;
+}
+
+.collection-header.expanded {
+    border-bottom: 1px solid #eee;
+}
+
+.collection-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.collection-name {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sync-status {
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    margin-left: 4px;
+}
+
+.sync-status.synced {
+    color: #2196F3;
+}
+
+.sync-status.local {
+    color: #757575;
+}
+
+.expiry-info {
+    font-size: 0.8em;
+    color: #dc3545;
+    display: block;
+    margin-top: 2px;
+}
+
+.collection-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.tabs-list {
+    padding: 10px;
+}
+
+.tab-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.tab-item:last-child {
+    border-bottom: none;
+}
+
+.tab-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.tab-favicon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+
+.tab-title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tab-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Bulk actions styles */
+.bulk-actions {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.selected-count {
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* Checkbox styles */
+input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+/* Recycle bin button */
+.recycle-bin-btn {
+    margin-left: 10px;
+    background-color: #6c757d;
+    font-size: 0.9em;
+    padding: 4px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.recycle-bin-btn .material-icons {
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.recycle-bin-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Recycle bin styles */
+.recycle-bin {
+    margin-top: 20px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.recycle-bin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.recycle-bin-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    color: #495057;
+}
+
+.close-recycle-bin {
+    background: none;
+    border: none;
+    color: #6c757d;
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+.close-recycle-bin:hover {
+    color: #495057;
+}
+
+.recycle-bin-content {
+    padding: 10px;
+}
+
+.recycle-bin-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+    background: #fff;
+    transition: background-color 0.2s;
+}
+
+.recycle-bin-item:hover {
+    background-color: #f8f9fa;
+}
+
+.recycle-bin-item:last-child {
+    border-bottom: none;
+}
+
+.item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.item-name {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.item-date {
+    font-size: 0.8em;
+    color: #6c757d;
+}
+
+.restore-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+}
+
+.restore-btn:hover {
+    background-color: #218838;
+}
+
+/* Undo notification */
+.undo-notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #343a40;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+.undo-btn {
+    background-color: #6c757d;
+    font-size: 0.9em;
+    padding: 4px 8px;
+}
+
+.undo-btn:hover {
+    background-color: #5a6268;
+}
+
+.countdown {
+    font-size: 0.9em;
+    color: #adb5bd;
+    min-width: 24px;
+    text-align: center;
+} 
