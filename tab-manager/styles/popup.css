@@ -19,10 +19,13 @@ body {
     padding: 10px 0;
     border-bottom: 1px solid #eee;
     z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 #collectionName {
-    width: 70%;
+    flex: 1;
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
@@ -57,6 +60,9 @@ button:hover {
     margin-bottom: 10px;
     padding: 5px 0;
     border-bottom: 2px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .collection-item {
@@ -126,25 +132,47 @@ button:hover {
 
 .tabs-list {
     padding: 10px;
+    scroll-behavior: smooth;
 }
 
 .tab-item {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     padding: 8px;
     border-bottom: 1px solid #eee;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    min-height: 40px;
 }
 
 .tab-item:last-child {
     border-bottom: none;
 }
 
+.tab-item::-webkit-scrollbar {
+    height: 4px;
+}
+
+.tab-item::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.tab-item::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.tab-item::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
 .tab-content {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
     flex: 1;
+    min-width: 0;
 }
 
 .tab-favicon {
@@ -155,14 +183,26 @@ button:hover {
 
 .tab-title {
     flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    white-space: normal;
+    line-height: 1.4;
+    min-width: 0;
 }
 
 .tab-actions {
     display: flex;
     gap: 8px;
+    padding-left: 8px;
+    flex-shrink: 0;
+}
+
+/* Make buttons more compact but still clickable */
+.tab-actions button {
+    padding: 6px 10px;
+    white-space: nowrap;
 }
 
 /* Bulk actions styles */
@@ -209,7 +249,6 @@ input[type="checkbox"] {
 
 /* Recycle bin button */
 .recycle-bin-btn {
-    margin-left: 10px;
     background-color: #6c757d;
     font-size: 0.9em;
     padding: 4px 8px;
@@ -217,6 +256,7 @@ input[type="checkbox"] {
     align-items: center;
     gap: 4px;
     font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+    margin-left: auto;
 }
 
 .recycle-bin-btn .material-icons {
