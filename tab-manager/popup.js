@@ -36,12 +36,37 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Add automatic cleanup
     await cleanupRecycleBin();
     
-    // Set up periodic cleanup
-    setInterval(cleanupRecycleBin, 60 * 60 * 1000); // Check every hour
+    // Start sync check
+    startSyncCheck();
 });
 
 const RECYCLE_BIN_KEY = 'recycleBin';
 const RECYCLE_BIN_RETENTION_DAYS = 7;
+
+// Update storage limits
+const SYNC_QUOTA_BYTES = 8000; // Maximum practical size for sync storage items
+const MAX_LOCAL_BYTES = chrome.storage.local.QUOTA_BYTES || 5242880; // Use maximum available local storage
+const SYNC_TOTAL_QUOTA = chrome.storage.sync.QUOTA_BYTES || 102400; // Total sync storage quota (100KB)
+
+// Optimize compression for maximum storage
+function compressTabData(tab) {
+    // Remove common URL prefixes and compress data
+    const url = tab.url
+        .replace(/^https?:\/\/(www\.)?/, '')  // Remove http(s):// and www.
+        .replace(/\/$/, '');  // Remove trailing slash
+    
+    // Truncate title if too long but keep important parts
+    const title = tab.title.length > 100 ? 
+        tab.title.substring(0, 97) + '...' : 
+        tab.title;
+    
+    // Store minimal favicon info
+    const favicon = tab.favIconUrl ? 
+        tab.favIconUrl.split('/').pop().split('?')[0] : // Get filename without query params
+        '';
+    
+    return { u: url, t: title, f: favicon };
+}
 
 async function saveCurrentTabs() {
     try {
@@ -51,6 +76,7 @@ async function saveCurrentTabs() {
             return;
         }
 
+        console.log('Querying tabs...');
         const tabs = await chrome.tabs.query({ currentWindow: true });
         const validTabs = tabs.filter(tab => {
             return tab.url.startsWith('http') || tab.url.startsWith('https');
@@ -61,44 +87,87 @@ async function saveCurrentTabs() {
             return;
         }
 
-        const tabUrls = validTabs.map(tab => ({
-            u: tab.url,
-            t: tab.title,
-            f: tab.favIconUrl || ''
-        }));
+        console.log(`Found ${validTabs.length} valid tabs`);
 
-        // Calculate collection size
-        const collectionSize = new Blob([JSON.stringify(tabUrls)]).size;
-        const SYNC_QUOTA_BYTES = 8000; // 8KB limit for sync storage
+        // Compress tab data before saving
+        const tabUrls = validTabs.map(tab => {
+            try {
+                return compressTabData(tab);
+            } catch (err) {
+                console.error('Error compressing tab:', tab, err);
+                return null;
+            }
+        }).filter(Boolean);
 
+        const collectionData = { 
+            tabs: tabUrls, 
+            lastModified: Date.now(),
+            version: '1.0'
+        };
+
+        console.log('Calculating collection size...');
+        const collectionSize = new Blob([JSON.stringify(collectionData)]).size;
+        console.log(`Collection size: ${Math.round(collectionSize/1024)}KB`);
+
+        // First try sync storage
         try {
-            if (collectionSize <= SYNC_QUOTA_BYTES) {
-                // Save to sync storage if small enough
-                const syncResult = await chrome.storage.sync.get('collections');
-                const syncCollections = syncResult.collections || {};
-                syncCollections[collectionName] = tabUrls;
+            console.log('Attempting to save to sync storage...');
+            const syncResult = await chrome.storage.sync.get('collections');
+            const syncCollections = syncResult.collections || {};
+            const totalSyncSize = new Blob([JSON.stringify(syncCollections)]).size;
+            console.log(`Current sync storage size: ${Math.round(totalSyncSize/1024)}KB`);
+
+            if (collectionSize <= SYNC_QUOTA_BYTES && 
+                (totalSyncSize + collectionSize) <= SYNC_TOTAL_QUOTA) {
+                syncCollections[collectionName] = collectionData;
                 await chrome.storage.sync.set({ collections: syncCollections });
                 document.getElementById('collectionName').value = '';
+                console.log('Successfully saved to sync storage');
                 alert(`Tabs saved successfully! Saved ${validTabs.length} tabs (🔄 synced across devices)`);
-            } else {
-                // Save to local storage if too large
-                const localResult = await chrome.storage.local.get('collections');
-                const localCollections = localResult.collections || {};
-                localCollections[collectionName] = tabUrls;
-                await chrome.storage.local.set({ collections: localCollections });
-                document.getElementById('collectionName').value = '';
-                alert(`Tabs saved successfully! Saved ${validTabs.length} tabs (💻 stored locally). Will sync automatically when reduced to 8KB or less.`);
+                await loadCollections();
+                return;
             }
-        } catch (error) {
-            console.error('Error saving collection:', error);
-            alert('Error saving collection: ' + error.message);
+        } catch (syncError) {
+            console.log('Sync storage failed, falling back to local storage:', syncError);
         }
 
-        await loadCollections();
+        // If sync storage fails or is too small, use local storage
+        try {
+            console.log('Saving to local storage...');
+            const localResult = await chrome.storage.local.get('collections');
+            const localCollections = localResult.collections || {};
+            
+            if (collectionSize > MAX_LOCAL_BYTES) {
+                throw new Error(`Collection size (${Math.round(collectionSize/1024)}KB) exceeds maximum allowed size (${Math.round(MAX_LOCAL_BYTES/1024)}KB). Try saving fewer tabs.`);
+            }
+            
+            localCollections[collectionName] = collectionData;
+            await chrome.storage.local.set({ collections: localCollections });
+            document.getElementById('collectionName').value = '';
+            console.log('Successfully saved to local storage');
+            alert(`Tabs saved successfully! Saved ${validTabs.length} tabs (💻 stored locally). Will sync automatically when size reduces.`);
+            
+            // Ensure collections are reloaded before trying to sync
+            await loadCollections();
+            
+            // Schedule a sync check with a slight delay
+            setTimeout(() => {
+                checkAndMoveToSync().catch(error => {
+                    console.error('Delayed sync check failed:', error);
+                });
+            }, 2000);
+        } catch (localError) {
+            console.error('Local storage failed:', localError);
+            throw new Error(`Unable to save collection: ${localError.message}`);
+        }
         
     } catch (error) {
         console.error('Error saving tabs:', error);
-        alert('Error saving tabs: ' + error.message);
+        let errorMessage = error.message;
+        if (error.message.includes('MAX_ITEMS')) {
+            errorMessage = 'Maximum number of collections reached. Try deleting some old collections first.';
+        }
+        alert('Error saving tabs: ' + errorMessage);
     }
 }
 
@@ -126,8 +195,8 @@ async function loadCollections() {
         bulkActionsDiv.style.display = 'none';
         bulkActionsDiv.innerHTML = `
             <span class="selected-count"></span>
-            <button class="open-selected-btn">Open Selected</button>
-            <button class="delete-selected-btn">Delete Selected</button>
+            <button class="open-selected-btn" type="button">Open Selected</button>
+            <button class="delete-selected-btn" type="button">Delete Selected</button>
         `;
         collectionsList.appendChild(bulkActionsDiv);
 
@@ -137,7 +206,7 @@ async function loadCollections() {
         counterDiv.className = 'collections-counter';
         counterDiv.innerHTML = `
             ${totalCollections} Collection${totalCollections !== 1 ? 's' : ''}
-            <button id="showRecycleBinBtn" class="recycle-bin-btn">
+            <button id="showRecycleBinBtn" class="recycle-bin-btn" type="button">
                 ♻️ Recycle Bin
             </button>
         `;
@@ -152,20 +221,18 @@ async function loadCollections() {
         }
 
         // Display synced collections first
-        for (const [name, tabs] of Object.entries(syncCollections)) {
-            createCollectionElement(name, tabs, true);
+        for (const [name, data] of Object.entries(syncCollections)) {
+            createCollectionElement(name, data.tabs || data, true);
         }
 
         // Then display local collections
-        for (const [name, tabs] of Object.entries(localCollections)) {
-            createCollectionElement(name, tabs, false);
+        for (const [name, data] of Object.entries(localCollections)) {
+            createCollectionElement(name, data.tabs || data, false);
         }
 
         // Add event listeners for bulk actions
         setupBulkActions();
 
-        // Check if any local collections can be moved to sync
-        checkAndMoveToSync();
     } catch (error) {
         console.error('Error loading collections:', error);
         alert('Error loading collections: ' + error.message);
@@ -591,40 +658,117 @@ function updateBulkActionsVisibility() {
 
 async function checkAndMoveToSync() {
     try {
-        const localResult = await chrome.storage.local.get('collections');
+        const [localResult, syncResult] = await Promise.all([
+            chrome.storage.local.get('collections'),
+            chrome.storage.sync.get('collections')
+        ]);
+
         const localCollections = localResult.collections || {};
-        const syncResult = await chrome.storage.sync.get('collections');
         const syncCollections = syncResult.collections || {};
 
+        // If no local collections, nothing to do
+        if (Object.keys(localCollections).length === 0) {
+            return;
+        }
+
         let hasChanges = false;
-        for (const [name, tabs] of Object.entries(localCollections)) {
-            const collectionSize = new Blob([JSON.stringify(tabs)]).size;
-            if (collectionSize <= 8000) { // 8KB sync limit
+        const currentSyncSize = new Blob([JSON.stringify(syncCollections)]).size;
+        const availableSyncSpace = SYNC_TOTAL_QUOTA - currentSyncSize;
+
+        console.log('Current sync size:', Math.round(currentSyncSize/1024), 'KB');
+        console.log('Available sync space:', Math.round(availableSyncSpace/1024), 'KB');
+
+        // Sort collections by size and last modified
+        const collectionsToSync = Object.entries(localCollections)
+            .map(([name, data]) => ({
+                name,
+                data,
+                size: new Blob([JSON.stringify(data)]).size,
+                lastModified: data.lastModified || 0
+            }))
+            .sort((a, b) => a.size - b.size || b.lastModified - a.lastModified);
+
+        // Try to move collections that fit in available space
+        for (const collection of collectionsToSync) {
+            const wouldFit = collection.size <= SYNC_QUOTA_BYTES && 
+                            (currentSyncSize + collection.size) <= SYNC_TOTAL_QUOTA;
+
+            if (wouldFit) {
                 try {
-                    // Move to sync storage
-                    syncCollections[name] = tabs;
-                    delete localCollections[name];
-                    hasChanges = true;
-                    console.log(`Moved collection "${name}" to sync storage`);
+                    // Create a copy of the sync collections with the new addition
+                    const updatedSyncCollections = { ...syncCollections };
+                    updatedSyncCollections[collection.name] = collection.data;
+
+                    // Verify the total size after adding
+                    const newTotalSize = new Blob([JSON.stringify(updatedSyncCollections)]).size;
+                    if (newTotalSize <= SYNC_TOTAL_QUOTA) {
+                        // Actually update sync storage
+                        await chrome.storage.sync.set({ 
+                            collections: updatedSyncCollections 
+                        });
+
+                        // Only remove from local after successful sync
+                        const updatedLocalCollections = { ...localCollections };
+                        delete updatedLocalCollections[collection.name];
+                        await chrome.storage.local.set({ 
+                            collections: updatedLocalCollections 
+                        });
+
+                        hasChanges = true;
+                        console.log(`Successfully moved "${collection.name}" to sync storage`);
+                    } else {
+                        console.log(`Skipping "${collection.name}" - would exceed quota`);
+                    }
                 } catch (error) {
-                    console.error(`Failed to move collection "${name}" to sync storage:`, error);
+                    console.error(`Failed to move "${collection.name}" to sync:`, error);
+                    // Continue with next collection
+                    continue;
                 }
             }
         }
 
         if (hasChanges) {
-            await Promise.all([
-                chrome.storage.sync.set({ collections: syncCollections }),
-                chrome.storage.local.set({ collections: localCollections })
-            ]);
-            await loadCollections(); // Refresh display
+            console.log('Collections were moved to sync, refreshing display...');
+            await loadCollections();
         }
     } catch (error) {
-        console.error('Error checking collections for sync:', error);
+        console.error('Error in checkAndMoveToSync:', error);
+        // Don't rethrow - this is a background operation
     }
 }
 
-// Make functions available globally
-window.openCollection = openCollection;
-window.deleteCollection = deleteCollection; 
+// Update the sync check interval management
+let syncCheckInterval;
+
+function startSyncCheck() {
+    // Clear any existing interval
+    if (syncCheckInterval) {
+        clearInterval(syncCheckInterval);
+    }
+
+    // Immediate first check
+    checkAndMoveToSync().catch(error => {
+        console.error('Initial sync check failed:', error);
+    });
+
+    // Set new interval
+    syncCheckInterval = setInterval(() => {
+        checkAndMoveToSync().catch(error => {
+            console.error('Periodic sync check failed:', error);
+            // Only stop interval on persistent errors
+            if (error.message.includes('QUOTA_BYTES_PER_ITEM')) {
+                clearInterval(syncCheckInterval);
+            }
+        });
+    }, 5 * 60 * 1000); // Check every 5 minutes
+}
+
+// Clean up interval when popup closes
+window.addEventListener('unload', () => {
+    if (syncCheckInterval) {
+        clearInterval(syncCheckInterval);
+    }
+});
+
+// Make only necessary functions available globally
 window.deleteCollection = deleteCollection; 
