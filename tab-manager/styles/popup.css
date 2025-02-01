@@ -101,6 +101,7 @@ button:hover {
     align-items: center;
     font-size: 14px;
     margin-left: 4px;
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
 }
 
 .sync-status.synced {
@@ -215,6 +216,7 @@ input[type="checkbox"] {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
 }
 
 .recycle-bin-btn .material-icons {
@@ -296,6 +298,7 @@ input[type="checkbox"] {
     display: flex;
     align-items: center;
     gap: 6px;
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
 }
 
 .item-date {

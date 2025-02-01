@@ -138,7 +138,7 @@ async function saveCurrentTabs() {
                 await chrome.storage.sync.set({ collections: syncCollections });
                 document.getElementById('collectionName').value = '';
                 console.log('Successfully saved to sync storage');
-                alert(`Tabs saved successfully! Saved ${validTabs.length} tabs (🔄 synced across devices)`);
+                alert(`Tabs saved successfully! Saved ${validTabs.length} tabs (\u{1F504} synced across devices)`);
                 await loadCollections();
                 return;
             }
@@ -160,7 +160,7 @@ async function saveCurrentTabs() {
             await chrome.storage.local.set({ collections: localCollections });
             document.getElementById('collectionName').value = '';
             console.log('Successfully saved to local storage');
-            alert(`Tabs saved successfully! Saved ${validTabs.length} tabs (💻 stored locally). Will sync automatically when size reduces.`);
+            alert(`Tabs saved successfully! Saved ${validTabs.length} tabs (\u{1F4BB} stored locally). Will sync automatically when size reduces.`);
             
             // Ensure collections are reloaded before trying to sync
             await loadCollections();
@@ -215,14 +215,14 @@ async function loadCollections() {
         `;
         collectionsList.appendChild(bulkActionsDiv);
 
-        // Display total number of collections
+        // Display total number of collections with proper emoji
         const totalCollections = Object.keys(syncCollections).length + Object.keys(localCollections).length;
         const counterDiv = document.createElement('div');
         counterDiv.className = 'collections-counter';
         counterDiv.innerHTML = `
             ${totalCollections} Collection${totalCollections !== 1 ? 's' : ''}
             <button id="showRecycleBinBtn" class="recycle-bin-btn" type="button">
-                ♻️ Recycle Bin
+                \u{267B}\u{FE0F} Recycle Bin
             </button>
         `;
         collectionsList.appendChild(counterDiv);
@@ -322,7 +322,6 @@ async function showRecycleBin() {
         const recycleBinDiv = document.createElement('div');
         recycleBinDiv.className = 'recycle-bin';
         
-        // Create recycle bin content without inline handlers
         recycleBinDiv.innerHTML = `
             <div class="recycle-bin-header">
                 <h3>Recycle Bin</h3>
@@ -346,7 +345,7 @@ async function showRecycleBin() {
                 );
                 
                 const deletedDate = new Date(item.deletedAt).toLocaleString();
-                const storageIcon = item.isSync ? '🔄' : '💻';
+                const storageIcon = item.isSync ? '\u{1F504}' : '\u{1F4BB}';
                 
                 itemDiv.innerHTML = `
                     <div class="item-info">
@@ -357,7 +356,6 @@ async function showRecycleBin() {
                     <button class="restore-btn" type="button">Restore</button>
                 `;
                 
-                // Add event listener for restore button
                 const restoreBtn = itemDiv.querySelector('.restore-btn');
                 restoreBtn.addEventListener('click', () => restoreItem(item));
                 
@@ -365,7 +363,6 @@ async function showRecycleBin() {
             });
         }
         
-        // Add event listener for close button
         const closeBtn = recycleBinDiv.querySelector('.close-recycle-bin');
         closeBtn.addEventListener('click', () => {
             recycleBinDiv.remove();
@@ -510,14 +507,16 @@ function createCollectionElement(name, tabs, isSynced) {
     const collectionDiv = document.createElement('div');
     collectionDiv.className = 'collection-item';
     
-    // Create collection header
+    // Create collection header with proper emoji encoding
     const headerDiv = document.createElement('div');
     headerDiv.className = 'collection-header';
     
-    // Create header content without inline handlers
+    // Use Unicode escape sequences for emojis
+    const syncIcon = isSynced ? '\u{1F504}' : '\u{1F4BB}';
+    
     headerDiv.innerHTML = `
         <span class="collection-name">${name} (${tabs.length} tabs) 
-            <span class="sync-status ${isSynced ? 'synced' : 'local'}">${isSynced ? '🔄' : '💻'}</span>
+            <span class="sync-status ${isSynced ? 'synced' : 'local'}">${syncIcon}</span>
         </span>
         <div class="collection-controls">
             <button class="open-all-btn" type="button">Open All</button>
@@ -618,40 +617,62 @@ function setupBulkActions() {
 
     const openSelectedBtn = bulkActionsDiv.querySelector('.open-selected-btn');
     const deleteSelectedBtn = bulkActionsDiv.querySelector('.delete-selected-btn');
+    const selectedCountSpan = bulkActionsDiv.querySelector('.selected-count');
 
     if (openSelectedBtn && deleteSelectedBtn) {
-        // Add event listeners for checkboxes
-        document.addEventListener('change', function(e) {
-            if (e.target.matches('.tab-checkbox, .collection-checkbox')) {
+        // Handle bulk open
+        openSelectedBtn.addEventListener('click', async () => {
+            const selectedCheckboxes = document.querySelectorAll('.tab-checkbox:checked');
+            if (selectedCheckboxes.length === 0) return;
+
+            if (confirm(`Open ${selectedCheckboxes.length} selected tabs?`)) {
+                selectedCheckboxes.forEach(checkbox => {
+                    const url = checkbox.dataset.url;
+                    if (url) {
+                        chrome.tabs.create({ url });
+                    }
+                });
+                // Uncheck all after opening
+                selectedCheckboxes.forEach(checkbox => checkbox.checked = false);
                 updateBulkActionsVisibility();
             }
         });
 
-        // Handle bulk open
-        openSelectedBtn.addEventListener('click', function() {
-            const selectedTabs = document.querySelectorAll('.tab-checkbox:checked');
-            if (selectedTabs.length > 0) {
-                if (confirm(`Open ${selectedTabs.length} selected tabs?`)) {
-                    selectedTabs.forEach(checkbox => {
-                        chrome.tabs.create({ url: checkbox.dataset.url });
-                    });
+        // Handle bulk delete
+        deleteSelectedBtn.addEventListener('click', async () => {
+            const selectedCheckboxes = document.querySelectorAll('.tab-checkbox:checked');
+            if (selectedCheckboxes.length === 0) return;
+
+            if (confirm(`Delete ${selectedCheckboxes.length} selected tabs?`)) {
+                try {
+                    for (const checkbox of selectedCheckboxes) {
+                        const collectionName = checkbox.dataset.collection;
+                        const url = checkbox.dataset.url;
+                        const isSync = checkbox.dataset.storage === 'sync';
+                        
+                        if (collectionName && url) {
+                            // Get the compressed URL (remove protocol)
+                            const compressedUrl = url.replace(/^https?:\/\/(www\.)?/, '');
+                            await deleteTabFromCollection(collectionName, compressedUrl, isSync);
+                        }
+                    }
+                    
+                    // Refresh the display
+                    await loadCollections();
+                    
+                    // Update bulk actions visibility
+                    updateBulkActionsVisibility();
+                } catch (error) {
+                    console.error('Error deleting selected tabs:', error);
+                    alert('Error deleting selected tabs: ' + error.message);
                 }
             }
         });
 
-        // Handle bulk delete
-        deleteSelectedBtn.addEventListener('click', function() {
-            const selectedTabs = document.querySelectorAll('.tab-checkbox:checked');
-            if (selectedTabs.length > 0) {
-                if (confirm(`Delete ${selectedTabs.length} selected tabs?`)) {
-                    selectedTabs.forEach(checkbox => {
-                        deleteTabFromCollection(
-                            checkbox.dataset.collection,
-                            checkbox.dataset.url,
-                            checkbox.dataset.storage === 'sync'
-                        );
-                    });
-                }
+        // Add event listeners for checkboxes
+        document.addEventListener('change', (e) => {
+            if (e.target.matches('.tab-checkbox')) {
+                updateBulkActionsVisibility();
             }
         });
     }
@@ -659,7 +680,10 @@ function setupBulkActions() {
 
 function updateBulkActionsVisibility() {
     const bulkActionsDiv = document.querySelector('.bulk-actions');
-    const selectedCount = document.querySelectorAll('.tab-checkbox:checked').length;
+    if (!bulkActionsDiv) return;
+
+    const selectedCheckboxes = document.querySelectorAll('.tab-checkbox:checked');
+    const selectedCount = selectedCheckboxes.length;
     const selectedCountSpan = bulkActionsDiv.querySelector('.selected-count');
 
     if (selectedCount > 0) {
