@@ -50,6 +50,9 @@ const SYNC_TOTAL_QUOTA = chrome.storage.sync.QUOTA_BYTES || 102400; // Total syn
 
 // Optimize compression for maximum storage
 function compressTabData(tab) {
+    // Store URL type (http or https)
+    const urlType = tab.url.startsWith('https') ? 'https' : 'http';
+    
     // Remove common URL prefixes and compress data
     const url = tab.url
         .replace(/^https?:\/\/(www\.)?/, '')  // Remove http(s):// and www.
@@ -65,7 +68,19 @@ function compressTabData(tab) {
         tab.favIconUrl.split('/').pop().split('?')[0] : // Get filename without query params
         '';
     
-    return { u: url, t: title, f: favicon };
+    return { u: url, t: title, f: favicon, p: urlType };
+}
+
+// Add function to reconstruct full URL
+function getFullUrl(tab) {
+    // If the URL already starts with http(s), return as is
+    if (tab.u.startsWith('http://') || tab.u.startsWith('https://')) {
+        return tab.u;
+    }
+    
+    // Use stored protocol or default to https
+    const protocol = tab.p || 'https';
+    return `${protocol}://${tab.u}`;
 }
 
 async function saveCurrentTabs() {
@@ -438,9 +453,8 @@ async function deleteTabFromCollection(collectionName, tabUrl, isSync) {
         const collections = result.collections || {};
         
         if (collections[collectionName]) {
-            const deletedTab = collections[collectionName].find(tab => tab.u === tabUrl);
+            const deletedTab = collections[collectionName].tabs.find(tab => tab.u === tabUrl);
             if (deletedTab) {
-                // Add to recycle bin before removing
                 await addToRecycleBin({
                     type: 'tab',
                     collectionName,
@@ -449,11 +463,11 @@ async function deleteTabFromCollection(collectionName, tabUrl, isSync) {
                 });
             }
 
-            collections[collectionName] = collections[collectionName].filter(
+            collections[collectionName].tabs = collections[collectionName].tabs.filter(
                 tab => tab.u !== tabUrl
             );
 
-            if (collections[collectionName].length === 0) {
+            if (collections[collectionName].tabs.length === 0) {
                 delete collections[collectionName];
             }
 
@@ -532,7 +546,7 @@ function createCollectionElement(name, tabs, isSynced) {
         e.stopPropagation();
         if (confirm(`Open all ${tabs.length} tabs?`)) {
             tabs.forEach(tab => {
-                chrome.tabs.create({ url: tab.u });
+                chrome.tabs.create({ url: getFullUrl(tab) });
             });
         }
     });
@@ -549,10 +563,10 @@ function createCollectionElement(name, tabs, isSynced) {
         const tabDiv = document.createElement('div');
         tabDiv.className = 'tab-item';
         
-        // Create tab content
+        // Create tab content with full URL in data attribute
         tabDiv.innerHTML = `
             <div class="tab-content">
-                <input type="checkbox" class="tab-checkbox" data-collection="${name}" data-url="${tab.u}" data-storage="${isSynced ? 'sync' : 'local'}">
+                <input type="checkbox" class="tab-checkbox" data-collection="${name}" data-url="${getFullUrl(tab)}" data-storage="${isSynced ? 'sync' : 'local'}">
                 <img src="${tab.f || 'icons/default-favicon.png'}" class="tab-favicon" alt="">
                 <span class="tab-title">${tab.t}</span>
             </div>
@@ -574,7 +588,7 @@ function createCollectionElement(name, tabs, isSynced) {
         const tabCheckbox = tabDiv.querySelector('.tab-checkbox');
 
         openTabBtn.addEventListener('click', () => {
-            chrome.tabs.create({ url: tab.u });
+            chrome.tabs.create({ url: getFullUrl(tab) });
         });
 
         deleteTabBtn.addEventListener('click', () => {

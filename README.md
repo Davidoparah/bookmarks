@@ -5,10 +5,10 @@ A Chrome extension to manage and organize tabs based on different roles/activiti
 ## Features
 
 - Create and manage different tab collections (e.g., Job Search, House Hunting, Entertainment, Coding, Studying)
-- Save current tabs to a collection
+- Save current tabs to a collection with automatic compression
 - Open all tabs in a collection with one click
 - Delete or modify existing collections
-- Smart storage management with automatic syncing
+- Smart storage management with cross-device syncing
 - Bulk actions for multiple collections or tabs
 - Visual indicators for sync status (🔄 for synced, 💻 for local)
 - Recycle bin for recovering deleted items
@@ -23,114 +23,134 @@ A Chrome extension to manage and organize tabs based on different roles/activiti
 ## Usage
 
 1. Click the extension icon in Chrome toolbar
-2. Create new collections for different activities
-3. When you have tabs open for an activity:
-   - Click the extension icon
-   - Enter a name for your collection
+2. Create new collections:
+   - Enter a collection name
    - Click "Save current tabs"
-4. To restore tabs:
-   - Click the extension icon
-   - Select the collection
-   - Click "Open all tabs" or select specific tabs to open
+   - The extension automatically chooses optimal storage (sync or local)
+3. Manage collections:
+   - Click on a collection to expand/collapse
+   - Use "Open All" to launch all tabs
+   - Delete individual tabs or entire collections
+   - Use checkboxes for bulk operations
+4. Recover deleted items:
+   - Access the Recycle Bin via the ♻️ button
+   - Items are kept for 7 days
+   - Restore individual items or entire collections
 
 ## Storage Management
 
-The extension uses an advanced storage system to maximize sync capabilities while handling larger collections:
+### Smart Storage System
+- Automatic data compression:
+  - URL optimization (removes common prefixes, preserves protocols)
+  - Title truncation (max 100 characters)
+  - Favicon optimization
+  - Metadata tracking
+- Storage selection:
+  - Sync storage: Up to 8KB per collection (syncs across devices)
+  - Local storage: Up to 5MB per collection (larger collections)
+  - Total sync quota: ~100KB (Chrome limitation)
 
-### Smart Storage System:
-- Automatically compresses data to maximize storage efficiency:
-  - Removes common URL prefixes (http://, https://, www.)
-  - Truncates long titles while preserving readability
-  - Optimizes favicon storage
-- Uses Chrome's sync storage (up to 8KB per collection) for cross-device access
-- Falls back to local storage (up to 5MB) for larger collections
-- Shows clear visual indicators: 🔄 for synced, 💻 for local storage
-
-### Automatic Sync Features:
-- Checks every 5 minutes for sync opportunities
+### Automatic Sync Features
+- Background sync checks every 5 minutes
 - Prioritizes collections based on:
-  - Size (smaller collections sync first)
-  - Last modified time (recent changes get priority)
-- Automatically moves collections to sync storage when space becomes available
-- Preserves collection metadata across storage types
+  - Size (smaller collections first)
+  - Last modified time
+  - Available sync space
+- Seamless transition between storage types:
+  - Large collections start in local storage
+  - Automatically moves to sync when size permits
+  - Preserves all data during transitions
 
-### Storage Optimization:
-- Intelligent data compression
-- Automatic cleanup of unused data
-- Size-based storage decisions
-- Quota management for both sync and local storage
+## Data Management
 
-## Recycle Bin & Recovery
+### URL Handling
+- Smart URL compression:
+  - Preserves protocol (http/https)
+  - Removes common prefixes (www.)
+  - Maintains full functionality
+- Automatic protocol detection
+- Fallback to HTTPS for safety
 
-### Features:
-- 7-day retention period for deleted items
-- Automatic cleanup of expired items
-- Visual countdown for expiration
-- Storage type preservation (sync/local) during restoration
-
-### Recovery Options:
-- Immediate undo button after deletion
-- Full recycle bin access for older deletions
-- Restore entire collections or individual tabs
-- Clear expiration indicators
-
-### Management:
-- Hourly automatic cleanup
-- Clear visual indicators for remaining time
-- Easy-to-use restore buttons
-- Storage status indicators
-
-## Bulk Actions
-
-### Features:
-- Select multiple tabs across collections
-- Batch operations:
+### Collection Features
+- Expandable/collapsible collections
+- Visual status indicators
+- Bulk operations:
+  - Select multiple tabs
   - Open selected tabs
   - Delete selected tabs
-- Visual counter for selected items
-- Easy selection toggle
+- Sort by name, size, or date
+
+### Error Handling
+- Graceful fallback to local storage
+- Automatic retry mechanisms
+- Clear error messages
+- Data integrity checks
+- Quota management
+
+## Recovery System
+
+### Recycle Bin
+- 7-day retention period
+- Automatic cleanup
+- Visual countdown for expiration
+- Storage type preservation
+- Quick restore options
+
+### Undo Features
+- Immediate undo for deletions
+- Bulk restore capabilities
+- Storage status preservation
+- Automatic cleanup
 
 ## Technical Details
 
-### Storage Limits:
-- Sync Storage:
-  - Per collection: 8KB maximum
-  - Total: ~100KB (Chrome sync quota)
-- Local Storage:
-  - Per collection: 5MB maximum
-  - Total: Based on available disk space
+### Storage Optimization
+- Intelligent compression algorithms
+- Protocol preservation
+- Automatic size management
+- Quota-aware operations
 
-### Data Optimization:
-- URL compression: Removes common prefixes and trailing slashes
-- Title optimization: Smart truncation at 100 characters
-- Favicon optimization: Stores only essential path information
-- Metadata tracking: Timestamps for sync prioritization
+### Performance
+- Asynchronous operations
+- Background sync
+- Memory-efficient
+- Clean up on unload
 
-### Error Handling:
-- Graceful fallback to local storage
-- Clear error messages
-- Automatic retry mechanisms
-- Data integrity checks
-
-## Browser Compatibility
-
-- Chrome version 88 or higher required
-- Works across all platforms (Windows, macOS, Linux)
-- Sync features require Chrome sync to be enabled
+### Browser Support
+- Chrome version 88+
+- Cross-platform support
+- Sync requires Chrome sync enabled
 
 ## Project Structure
 
 ```
 tab-manager/
 ├── manifest.json      # Extension configuration
-├── popup.html        # Main extension interface
-├── popup.js          # Core functionality
-├── background.js     # Background processes
-├── content.js        # Page interaction
+├── popup.html        # Main interface
+├── popup.js         # Core functionality
+│   ├── Storage Management
+│   ├── URL Handling
+│   ├── Collection Management
+│   └── Recovery System
+├── background.js    # Background processes
+├── content.js       # Page interaction
 ├── styles/
-│   └── popup.css     # UI styling
+│   └── popup.css    # UI styling
 └── icons/
-    ├── icon16.png    # Extension icons
+    ├── icon16.png   # Extension icons
     ├── icon48.png
     └── icon128.png
 ```
+
+## Known Limitations
+- Sync storage limited to 8KB per collection (Chrome limitation)
+- Local storage limited to 5MB per collection
+- Total sync quota ~100KB across all collections
+- Some chrome:// URLs cannot be saved
+
+## Best Practices
+- Use meaningful collection names
+- Regular cleanup of unused collections
+- Check recycle bin periodically
+- Use bulk actions for efficiency
+- Split large collections if needed
