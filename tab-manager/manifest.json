@@ -1,8 +1,9 @@
 {
     "manifest_version": 3,
-    "name": "Tab Manager",
+    "name": "Tab Manager by David Oparah",
     "version": "1.0",
-    "description": "A Chrome extension to manage and organize tabs based on different roles/activities",
+    "description": "A powerful Chrome extension to manage and organize tabs efficiently. Created by David Oparah.",
+    "author": "David Oparah",
     "permissions": [
         "tabs",
         "storage",

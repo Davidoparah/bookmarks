@@ -1,15 +1,21 @@
-# Tab Manager Chrome Extension
+# Tab Manager by David Oparah
 
-A Chrome extension to manage and organize tabs based on different roles/activities.
+A powerful Chrome extension designed and developed by David Oparah to help users efficiently manage and organize their browser tabs. This extension combines smart storage management with an intuitive interface to provide a seamless tab organization experience.
+
+## About the Developer
+
+This extension was created by David Oparah, a software developer passionate about creating tools that enhance productivity and improve the browsing experience. The Tab Manager is designed with attention to detail and focuses on providing a smooth, efficient way to organize your digital workspace.
 
 ## Features
 
 - Create and manage different tab collections (e.g., Job Search, House Hunting, Entertainment, Coding, Studying)
-- Save current tabs to a collection
+- Save current tabs to a collection with automatic compression
 - Open all tabs in a collection with one click
 - Delete or modify existing collections
 - Smart storage management with cross-device syncing
-- Visual indicators for sync status
+- Bulk actions for multiple collections or tabs
+- Visual indicators for sync status (🔄 for synced, 💻 for local)
+- Recycle bin for recovering deleted items
 
 ## Storage Management
 
@@ -122,3 +128,16 @@ Each collection is displayed with:
 - Optimizes storage usage through data compression
 
 ## Project Structure
+
+## Contact & Support
+
+For questions, suggestions, or support, you can reach out to me:
+- Email: [Your professional email]
+- GitHub: [Your GitHub profile]
+- LinkedIn: [Your LinkedIn profile]
+
+## License
+
+Copyright © 2024 David Oparah. All rights reserved.
+
+This extension is provided as is, without warranty of any kind. While using this extension, you agree to be bound by the terms and conditions of this license.
