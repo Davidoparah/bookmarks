@@ -132,7 +132,6 @@ button:hover {
 
 .tabs-list {
     padding: 10px;
-    scroll-behavior: smooth;
 }
 
 .tab-item {
@@ -141,30 +140,12 @@ button:hover {
     align-items: flex-start;
     padding: 8px;
     border-bottom: 1px solid #eee;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    min-height: 40px;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .tab-item:last-child {
     border-bottom: none;
-}
-
-.tab-item::-webkit-scrollbar {
-    height: 4px;
-}
-
-.tab-item::-webkit-scrollbar-track {
-    background: #f1f1f1;
-}
-
-.tab-item::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-}
-
-.tab-item::-webkit-scrollbar-thumb:hover {
-    background: #666;
 }
 
 .tab-content {
@@ -183,26 +164,19 @@ button:hover {
 
 .tab-title {
     flex: 1;
-    overflow-wrap: break-word;
     word-wrap: break-word;
     word-break: break-word;
-    hyphens: auto;
     white-space: normal;
     line-height: 1.4;
+    margin-right: 10px;
     min-width: 0;
 }
 
 .tab-actions {
     display: flex;
     gap: 8px;
-    padding-left: 8px;
-    flex-shrink: 0;
-}
-
-/* Make buttons more compact but still clickable */
-.tab-actions button {
-    padding: 6px 10px;
-    white-space: nowrap;
+    margin-left: auto;
+    align-items: flex-start;
 }
 
 /* Bulk actions styles */

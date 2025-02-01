@@ -101,7 +101,7 @@ async function saveCurrentTabs() {
             alert('No valid tabs to save. Please open some web pages.');
             return;
         }
-
+        
         console.log(`Found ${validTabs.length} valid tabs`);
 
         // Compress tab data before saving
@@ -158,12 +158,12 @@ async function saveCurrentTabs() {
             
             localCollections[collectionName] = collectionData;
             await chrome.storage.local.set({ collections: localCollections });
-            document.getElementById('collectionName').value = '';
+        document.getElementById('collectionName').value = '';
             console.log('Successfully saved to local storage');
             alert(`Tabs saved successfully! Saved ${validTabs.length} tabs (\u{1F4BB} stored locally). Will sync automatically when size reduces.`);
             
             // Ensure collections are reloaded before trying to sync
-            await loadCollections();
+        await loadCollections();
             
             // Schedule a sync check with a slight delay
             setTimeout(() => {
@@ -175,7 +175,7 @@ async function saveCurrentTabs() {
             console.error('Local storage failed:', localError);
             throw new Error(`Unable to save collection: ${localError.message}`);
         }
-        
+
     } catch (error) {
         console.error('Error saving tabs:', error);
         let errorMessage = error.message;
@@ -326,7 +326,7 @@ async function showRecycleBin() {
             <div class="recycle-bin-header">
                 <h3>Recycle Bin</h3>
                 <button class="close-recycle-bin" type="button">×</button>
-            </div>
+                </div>
             <div class="recycle-bin-content"></div>
         `;
         
